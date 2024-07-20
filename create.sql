@@ -1,5 +1,13 @@
 create database if not exists SAMS;
 
+-- alter table table1 add constraint variable_name1 foreign key (variable_name2) 
+-- reference table2 (variable_name2) on update set (null/default); 
+-- can cascade or delete too!
+
+-- alter table table1 add constraint variable_name1 foreign key 
+-- (variable_name2) reference table2 (variable_name2) on delete restrict
+-- can cascade or set as well
+
 drop table if exists airline;
 create table airline (
 airlineID int,
@@ -25,9 +33,15 @@ skids boolean default False,
 props int default 0,
 engines int default 0,
 primary key (airlineID, tail_num),
-foreign key (airlineID) references airline(airlineID), 
-foreign key (locID) references location(locID)
+constraint foreign key (airlineID) references airline(airlineID), 
+constraint foreign key (locID) references location(locID)
 );
+
+alter table airplane add constraint delete_referential_error foreign key 
+(airlineID) references airline (airlineID) on delete cascade;
+
+alter table airplane add constraint update_referential_error foreign key 
+(airlineID) references airline (airlineID) on update set null;
 
 drop table if exists airport;
 create table airport (
@@ -38,7 +52,7 @@ state varchar(100) not null,
 country varchar(100) not null,
 locID int not null,
 primary key (airportID),
-foreign key (locID) references location(locID)
+constraint foreign key (locID) references location(locID)
 );
 
 drop table if exists leg;
@@ -48,8 +62,8 @@ distance decimal (100, 2) default 0, -- int or decimal?
 departure int not null,
 arrival int not null,
 primary key (legID),
-foreign key (departure) references airport(airportID),
-foreign key (arrival) references airport(airportID)
+constraint foreign key (departure) references airport(airportID),
+constraint foreign key (arrival) references airport(airportID)
 );
 
 drop table if exists route;
@@ -64,8 +78,6 @@ routeID int,
 legID int,
 sequence int, -- WTF
 primary key (routeID, legID, sequence),  -- Not sure what modifying the primary key to prioritize the sequence/ordering attribute
-foreign key (routeID) references route(routeID),
-foreign key (legID) references leg(legID)
+constraint foreign key (routeID) references route(routeID),
+constraint foreign key (legID) references leg(legID)
 );
-
-
