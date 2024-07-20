@@ -3,7 +3,7 @@ create database if not exists SAMS;
 drop table if exists airline;
 create table airline (
 airlineID int,
-revenue decimal(100, 2),
+revenue decimal(100, 2) default 0,
 primary key (airlineID)
 );
 
