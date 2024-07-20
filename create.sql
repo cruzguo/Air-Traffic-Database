@@ -18,7 +18,7 @@ create table airplane (
 airlineID int,
 tail_num int,
 seat_cap int default 0,
-speed int, -- int or decimal?
+speed int default 0, -- int or decimal?
 locID int, -- null indicates it is in flight
 plane_type varchar(100), -- jet, propeller, special
 skids boolean default False,
@@ -32,10 +32,10 @@ foreign key (locID) references location(locID)
 drop table if exists airport;
 create table airport (
 airportID int,
-name varchar (100),
-city varchar(100),
-state varchar(100),
-country varchar(100),
+name varchar (100) not null,
+city varchar(100) not null,
+state varchar(100) not null,
+country varchar(100) not null,
 locID int not null,
 primary key (airportID),
 foreign key (locID) references location(locID)
