@@ -11,17 +11,13 @@ use SAMS;
 
 -- DECIMAL CANT BE ABOVE 100
 
+
+
 drop table if exists airline;
 create table airline (
 airlineID int,
 revenue decimal(50, 2) default 0,
 primary key (airlineID)
-);
-
-drop table if exists location;
-create table location (
-locID int,
-primary key (locID)
 );
 
 drop table if exists airplane;
@@ -39,6 +35,13 @@ primary key (airlineID, tail_num),
 constraint foreign key (airlineID) references airline(airlineID), 
 constraint foreign key (locID) references location(locID)
 );
+
+drop table if exists location;
+create table location (
+locID int,
+primary key (locID)
+);
+
 
 -- CANT HAVE DUPLICATE CONSTRAINT NAMES FIX IT
 
