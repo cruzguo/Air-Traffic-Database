@@ -17,8 +17,8 @@ insert into airplane values
 (1, 45, 150, 717, 12, 'jet', False, 0, 20),
 (4, 111, 300, 300, null, 'big helicopter', False, 1, 2),
 (5, 88, 211, 1589, 3478, 'jet', False, 0, 40),
-(2, 9843, 10, 269, 007, 'propeller', True, 3, 1),
-(3, 2, 709, 678, null, 'jet', True, 0, 62);
+(2, 9843, 10, 269, 007, 'propeller', True, 3, 0),
+(3, 2, 709, 678, null, 'jet', False, 0, 62);
 
 insert into airport values
 (4578, 'Big Chungus Airport', 'Accident', 'Maryland', 'USA', 727),
@@ -47,3 +47,10 @@ insert into route_path values
 (92, 17, 69),
 (1, 2233, 69),
 (45, 900, 69);
+
+insert into flight values
+(3145, 66, 4, 111, 1, 'in_flight', '05:22:17', 1.50),
+(7878, 92, 3, 2, 0, 'in_flight', '12:57:10', 982.22),
+(212, 1, 2, 9843, 2, 'on_ground', '13:33:00', 2000.00),
+(905, 23, 1, 45, 1, 'on_ground', '22:01:22', 100.50),
+(34, 45, 5, 88, 3, 'on_ground', '20:12:09', 4440.10);
