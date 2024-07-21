@@ -14,6 +14,9 @@ use SAMS;
 
 -- Error Code: 3780. Referencing column 'airlineID' and referenced column 'airlineID' in foreign key constraint 'fk_airplane_airlineID' are incompatible.
 
+-- Error Code: 3780. Referencing column 'departure' and referenced column 'airportID' in foreign key constraint 'fk_leg_departure' are incompatible.
+
+
 
 create table airline (
 airlineID varchar(50),
@@ -55,8 +58,8 @@ constraint fk_airport_locID foreign key (locID) references location(locID) on de
 create table leg (
 legID int,
 distance int default 0,
-departure int not null,
-arrival int not null,
+departure varchar(50) not null,
+arrival varchar(50) not null,
 primary key (legID),
 constraint fk_leg_departure foreign key (departure) references airport(airportID) on delete cascade on update cascade,
 constraint fk_leg_arrival foreign key (arrival) references airport(airportID) on delete cascade on update cascade
