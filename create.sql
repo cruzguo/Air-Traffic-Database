@@ -27,15 +27,15 @@ create table airplane (
 airlineID int,
 tail_num int,
 seat_cap int default 0,
-speed int default 0, -- int or decimal?
+speed int default 0, -- mph
 locID int, -- null indicates it is in flight
-plane_type varchar(100), -- jet, propeller, special
-skids boolean default False,
-props int default 0,
-engines int default 0,
+plane_type varchar(100) not null, -- jet, propeller, special
+skids boolean default False, -- should be false if jet type
+props int default 0, -- number of propellers for propeller type
+engines int default 0, -- number of engines for jet type
 primary key (airlineID, tail_num),
 constraint fk_airplane_airlineID foreign key (airlineID) references airline(airlineID) on delete cascade on update cascade, 
-constraint fk_airplane_airlineID foreign key (locID) references location(locID) on delete cascade on update cascade
+constraint fk_airplane_locID foreign key (locID) references location(locID) on delete cascade on update cascade
 );
 
 create table airport (
