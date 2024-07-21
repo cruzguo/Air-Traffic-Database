@@ -17,6 +17,7 @@ revenue decimal(50, 2) default 0,
 primary key (airlineID)
 );
 
+
 create table location (
 locID int,
 primary key (locID)
