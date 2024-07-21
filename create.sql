@@ -93,16 +93,16 @@ constraint fk_flight_routeID foreign key (routeID) references route(routeID) on 
 constraint fk_flight_support foreign key (support_airline, support_tail) references airplane(airlineID, tail_num) on delete cascade on update cascade
 );
 
--- delimiter //
--- create trigger check_progress_before_insert
--- before insert on flight
--- for each row
--- begin
--- 	declare leg_count int;
--- 	select count(*) into leg_count from route_path where routeID = route.routeID; 
--- 	if progress > leg_count then
--- 		signal sqlstate '69420'
---         set message_text = 'progress number is greater than the number of legs';
--- 	end if;
--- end //
--- delimiter ;
+delimiter //
+create trigger check_progress_before_insert
+before insert on flight
+for each row
+begin
+	declare leg_count int;
+	select count(*) into leg_count from route_path where routeID = route.routeID; 
+	if progress > leg_count then
+		signal sqlstate '69420'
+        set message_text = 'progress number is greater than the number of legs';
+	end if;
+end //
+delimiter ;
