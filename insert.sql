@@ -26,3 +26,24 @@ insert into airport values
 (2349, 'Tilted Towers Airport', 'Batman', 'Batman', 'Turkey', 12),
 (8765, 'Residencia Onix', 'Barcelona', 'Cataluyna', 'Spain', 007),
 (5, 'Good Airport Name', 'Boring', 'Tennessee', 'USA', 12287);
+
+insert into leg values
+(78, 424.67, 5, 666),
+(17, 111.11, 2349, 8765),
+(12111, 673.56, 666, 4578),
+(2233, 901.20, 8765, 4578),
+(900, 200.33, 4578, 5);
+
+insert into route values
+(23),
+(66),
+(92),
+(1),
+(45);
+
+insert into route_path values
+(23, 12111, 69),
+(66, 78, 69),
+(92, 17, 69),
+(1, 2233, 69),
+(45, 900, 69);
