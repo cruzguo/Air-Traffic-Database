@@ -1,3 +1,4 @@
+drop database if exists SAMS;
 create database if not exists SAMS;
 use SAMS;
 
@@ -16,7 +17,6 @@ airlineID int,
 revenue decimal(50, 2) default 0,
 primary key (airlineID)
 );
-
 
 create table location (
 locID int,
@@ -73,8 +73,16 @@ constraint fk_route_path_routeID foreign key (routeID) references route(routeID)
 constraint fk_route_path_legID foreign key (legID) references leg(legID) on delete cascade on update cascade
 );
 
--- if route is deleted, then so should the associated legs but how do we do that?
--- when routeID from route is deleted, then so should the entire route_path
-	-- not sure if on delete cascade does this
--- when legID from leg is deleted, then so should the entire route_path 
-	-- not sure if on delete cascade does this
+create table flight (
+flightID int,
+routeID int not null,
+support_airline int,
+support_tail int,
+progress int default 0,
+status char(9) default 'on_ground',
+next_time time default null,
+cost decimal (50, 2) default 0,
+primary key (flightID),
+constraint fk_flight_routeID foreign key (routeID) references route(routeID) on delete cascade on update cascade,
+constraint fk_flight_support foreign key (support_airline, support_tail) references airplane(airlineID, tail_num) on delete cascade on update cascade
+);
