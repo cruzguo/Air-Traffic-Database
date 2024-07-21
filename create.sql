@@ -12,8 +12,11 @@ use SAMS;
 
 -- DECIMAL CANT BE ABOVE 100
 
+-- Error Code: 3780. Referencing column 'airlineID' and referenced column 'airlineID' in foreign key constraint 'fk_airplane_airlineID' are incompatible.
+
+
 create table airline (
-airlineID int,
+airlineID varchar(50),
 revenue decimal(50, 2) default 0,
 primary key (airlineID)
 );
