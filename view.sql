@@ -1,3 +1,4 @@
+
 create or replace view flights_in_the_air as
 select flight.flightID as flightID, leg.departure as departure, 
 leg.arrival as arrival, flight.next_time as arrival_time, 
