@@ -29,13 +29,16 @@ tail_num int,
 seat_cap int default 0,
 speed int default 0, -- mph
 locID int, -- null indicates it is in flight
-plane_type varchar(100) not null, -- jet, propeller, special
-skids boolean default False, -- should be false if jet type
-props int default 0, -- number of propellers for propeller type
-engines int default 0, -- number of engines for jet type
+plane_type varchar(100) not null default 'other', -- jet, propeller, other
+skids boolean default False, -- should only be true if propeller type
+props int default null, -- number of propellers for propeller type -- null if not propeller type
+engines int default null, -- number of engines for jet type -- null if not jet type
 primary key (airlineID, tail_num),
 constraint fk_airplane_airlineID foreign key (airlineID) references airline(airlineID) on delete cascade on update cascade, 
-constraint fk_airplane_locID foreign key (locID) references location(locID) on delete cascade on update cascade
+constraint fk_airplane_locID foreign key (locID) references location(locID) on delete cascade on update cascade,
+constraint chk_plane_type_constraints CHECK (
+        (plane_type like 'jet' and engines is not null and props is null)
+        or (plane_type like 'propeller' and props is not null and engines is null and skid = true))
 );
 
 create table airport (
@@ -51,7 +54,7 @@ constraint fk_airport_locID foreign key (locID) references location(locID) on de
 
 create table leg (
 legID int,
-distance decimal (50, 2) default 0, -- int or decimal?
+distance int default 0,
 departure int not null,
 arrival int not null,
 primary key (legID),
@@ -79,10 +82,24 @@ routeID int not null,
 support_airline int,
 support_tail int,
 progress int default 0,
-status char(9) default 'on_ground',
+status enum('on_ground', 'in_flight') default 'on_ground',
 next_time time default null,
 cost decimal (50, 2) default 0,
 primary key (flightID),
 constraint fk_flight_routeID foreign key (routeID) references route(routeID) on delete cascade on update cascade,
 constraint fk_flight_support foreign key (support_airline, support_tail) references airplane(airlineID, tail_num) on delete cascade on update cascade
 );
+
+delimiter //
+create trigger check_progress_before_insert
+before insert on flight
+for each row
+begin
+	declare leg_count int;
+	select count(*) into leg_count from route_path where routeID = route.routeID; 
+	if progress > leg_count then
+		signal sqlstate '69420'
+        set message_text = 'progress number is greater than the number of legs';
+	end if;
+end //
+delimiter ;
