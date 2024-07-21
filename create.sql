@@ -1,4 +1,5 @@
 create database if not exists SAMS;
+use SAMS;
 
 -- alter table table1 add constraint variable_name1 foreign key (variable_name2) 
 -- reference table2 (variable_name2) on update set (null/default); 
@@ -8,10 +9,12 @@ create database if not exists SAMS;
 -- (variable_name2) reference table2 (variable_name2) on delete restrict
 -- can cascade or set as well
 
+-- DECIMAL CANT BE ABOVE 100
+
 drop table if exists airline;
 create table airline (
 airlineID int,
-revenue decimal(100, 2) default 0,
+revenue decimal(50, 2) default 0,
 primary key (airlineID)
 );
 
@@ -36,6 +39,8 @@ primary key (airlineID, tail_num),
 constraint foreign key (airlineID) references airline(airlineID), 
 constraint foreign key (locID) references location(locID)
 );
+
+-- CANT HAVE DUPLICATE CONSTRAINT NAMES FIX IT
 
 alter table airplane add constraint delete_airlineID_error foreign key 
 (airlineID) references airline (airlineID) on delete cascade;
@@ -62,6 +67,8 @@ primary key (airportID),
 constraint foreign key (locID) references location(locID)
 );
 
+-- CANT HAVE DUPLICATE CONSTRAINT NAMES FIX IT
+
 alter table airport add constraint delete_locID_error foreign key
 (locID) references location(locID) on delete cascade;
 
@@ -72,7 +79,7 @@ alter table airport add constraint update_locID_error foreign key
 drop table if exists leg;
 create table leg (
 legID int,
-distance decimal (100, 2) default 0, -- int or decimal?
+distance decimal (50, 2) default 0, -- int or decimal?
 departure int not null,
 arrival int not null,
 primary key (legID),
