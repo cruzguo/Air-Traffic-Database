@@ -67,7 +67,7 @@ sp_main: begin
         leave sp_main;
     end if;
 
-    select count(*) int location_count
+    select count(*) into location_count
     from location
     where locID = ip_locationID;
 
@@ -183,7 +183,7 @@ sp_main: begin
 
     if progress >= _leg_count then
         signal sqlstate '45000'
-        set message_text = 'Flight has already completed its route'
+        set message_text = 'Flight has already completed its route';
         leave sp_main;
     end if;
 
