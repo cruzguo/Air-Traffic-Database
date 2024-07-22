@@ -74,7 +74,7 @@ sp_main: begin
     from location
     where locID = ip_locationID;
 
-    if location_count > 0 then
+    if location_count != 0 then
         leave sp_main;
     end if;
     
@@ -84,7 +84,7 @@ sp_main: begin
     
     if ip_plane_type like '%propeller%' then
 		select true into skid_type;
-        select 0 into num_engines;
+        select 0 into num_engine;
 	end if;
     
     if ip_plane_type like '%jet%' then
@@ -116,7 +116,6 @@ delimiter //
 create procedure add_airport (in ip_airportID char(3), in ip_airport_name varchar(200),
     in ip_city varchar(100), in ip_state varchar(100), in ip_country char(3), in ip_locationID varchar(50))
 sp_main: begin
-	-- unique identifier is already enforced by table creation
     declare location_count int;
     declare location_value varchar(50);
 
@@ -124,11 +123,10 @@ sp_main: begin
     from location
     where locID = ip_locationID;
 
-    if location_count > 0 then
+    if location_count != 0 then
         leave sp_main;
     end if;
     
-     -- if ip_location is null, then the plane is in flight
     if ip_location is not null then
 		insert into location (locID)
 		values (ip_location);
@@ -228,8 +226,6 @@ sp_main: begin
     where routeID = _routeID;
 
     if progress >= _leg_count then
-        signal sqlstate '45000'
-        set message_text = 'Flight has already completed its route';
         leave sp_main;
     end if;
 
