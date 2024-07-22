@@ -1,109 +1,278 @@
-drop database if exists SAMS;
-create database if not exists SAMS;
-use SAMS;
 
--- alter table table1 add constraint variable_name1 foreign key (variable_name2) 
--- reference table2 (variable_name2) on update set (null/default); 
--- can cascade or delete too!
+-- CS4400: Introduction to Database Systems: Simple Airline Management System
+-- Stored procedures for Phase 3 of the Summer 2024 Semester
+-- Modify this file and rename it for your own purposes.
+-- Implement the below procedures and ensure they execute correctly.
 
--- alter table table1 add constraint variable_name1 foreign key 
--- (variable_name2) reference table2 (variable_name2) on delete restrict
--- can cascade or set as well
+/* This is a standard preamble for most of our scripts.  The intent is to establish
+a consistent environment for the database behavior. */
+set global transaction isolation level serializable;
+set global SQL_MODE = 'ANSI,TRADITIONAL';
+set names utf8mb4;
+set SQL_SAFE_UPDATES = 0;
 
--- DECIMAL CANT BE ABOVE 100
+set @thisDatabase = 'flight_tracking';
+use flight_tracking;
+-- -----------------------------------------------------------------------------
+-- stored procedures and views
+-- -----------------------------------------------------------------------------
+/* Standard Procedure: If one or more of the necessary conditions for a procedure to
+be executed is false, then simply have the procedure halt execution without changing
+the database state. Do NOT display any error messages, etc. */
 
--- Error Code: 3780. Referencing column 'airlineID' and referenced column 'airlineID' in foreign key constraint 'fk_airplane_airlineID' are incompatible.
+-- [_] supporting functions, views and stored procedures
+-- -----------------------------------------------------------------------------
+/* Helpful library capabilities to simplify the implementation of the required
+views and procedures. */
+-- -----------------------------------------------------------------------------
+drop function if exists leg_time;
+delimiter //
+create function leg_time (ip_distance integer, ip_speed integer)
+	returns time reads sql data
+begin
+	declare total_time decimal(10,2);
+    declare hours, minutes integer default 0;
+    set total_time = ip_distance / ip_speed;
+    set hours = truncate(total_time, 0);
+    set minutes = truncate((total_time - hours) * 60, 0);
+    return maketime(hours, minutes, 0);
 
--- Error Code: 3780. Referencing column 'departure' and referenced column 'airportID' in foreign key constraint 'fk_leg_departure' are incompatible.
+end //
+delimiter ;
+
+-- [1] add_airplane()
+-- -----------------------------------------------------------------------------
+/* This stored procedure creates a new airplane.  A new airplane must be sponsored
+by an existing airline, and must have a unique tail number for that airline.
+username.  An airplane must also have a non-zero seat capacity and speed. An airplane
+might also have other factors depending on it's type, like skids or some number
+of engines. Finally, an airplane must have a new and database-wide unique location
+since it will be used to carry passengers. */
+-- -----------------------------------------------------------------------------
+drop procedure if exists add_airplane;
+delimiter //
+create procedure add_airplane (in ip_airlineID varchar(50), in ip_tail_num varchar(50),
+	in ip_seat_capacity integer, in ip_speed integer, in ip_locationID varchar(50),
+    in ip_plane_type varchar(100), in ip_skids boolean, in ip_propellers integer,
+    in ip_jet_engines integer)
+sp_main: begin
+    declare airline_count int;
+    declare location_count int;
+    declare skid_type boolean;
+    declare num_propeller int;
+    declare num_engine int;
+
+    select count(*) into airline_count
+    from airline
+    where airlineID = ip_airlineID;
+
+    if airline_count = 0 then
+        leave sp_main;
+    end if;
+
+    select count(*) into location_count
+    from location
+    where locID = ip_locationID;
+
+    if location_count > 0 then
+        leave sp_main;
+    end if;
+    
+    if ip_seat_capacity = 0 or ip_speed = 0 then
+		leave sp_main;
+	end if;
+    
+    if ip_plane_type like '%propeller%' then
+		select true into skid_type;
+        select 0 into num_engines;
+	end if;
+    
+    if ip_plane_type like '%jet%' then
+		select false into skid_type;
+        select 0 into num_propeller;
+	end if;
+    
+    -- if ip_location is null, then the plane is in flight
+     if ip_location is not null then
+		insert into location (locID)
+		values (ip_location);
+	end if;
+    
+    insert into airplane (airlineID, tail_num, seat_cap, speed, locID, plane_type, skids, props, engine)
+    values (ip_airlineID, ip_tail_num, ip_seat_capacity, ip_speed, ip_locationID, ip_plane_type, skid_type, num_propeller, num_engines);
+
+end //
+delimiter ;
+
+-- [2] add_airport()
+-- -----------------------------------------------------------------------------
+/* This stored procedure creates a new airport.  A new airport must have a unique
+identifier along with a new and database-wide unique location if it will be used
+to support airplane takeoffs and landings.  An airport may have a longer, more
+descriptive name.  An airport must also have a city, state, and country designation. */
+-- -----------------------------------------------------------------------------
+drop procedure if exists add_airport;
+delimiter //
+create procedure add_airport (in ip_airportID char(3), in ip_airport_name varchar(200),
+    in ip_city varchar(100), in ip_state varchar(100), in ip_country char(3), in ip_locationID varchar(50))
+sp_main: begin
+	-- unique identifier is already enforced by table creation
+    declare location_count int;
+    declare location_value varchar(50);
+
+    select count(*) into location_count
+    from location
+    where locID = ip_locationID;
+
+    if location_count > 0 then
+        leave sp_main;
+    end if;
+    
+     -- if ip_location is null, then the plane is in flight
+    if ip_location is not null then
+		insert into location (locID)
+		values (ip_location);
+	end if;
+    
+    if ip_city is null or ip_state is null or ip_country is null then
+		leave sp_main;
+	end if;
+    
+    insert into airport (airportID, name, city, state, country, locID)
+    values (ip_airportID, ip_airport_name, ip_city, ip_state, ip_country, ip_locationID);
+
+end //
+delimiter ;
 
 
+-- [3] offer_flight()
+-- -----------------------------------------------------------------------------
+/* This stored procedure creates a new flight.  The flight can be defined before
+an airplane has been assigned for support, but it must have a valid route.  And
+the airplane, if designated, must not be in use by another flight.  The flight
+can be started at any valid location along the route except for the final stop,
+and it will begin on the ground.  You must also include when the flight will
+takeoff along with its cost. */
+-- -----------------------------------------------------------------------------
+drop procedure if exists offer_flight;
+delimiter //
+create procedure offer_flight (in ip_flightID varchar(50), in ip_routeID varchar(50),
+    in ip_support_airline varchar(50), in ip_support_tail varchar(50), in ip_progress integer,
+    in ip_next_time time, in ip_cost integer)
+sp_main: begin
+    declare route_count int;
+    declare airplane_count int;
+    declare progress int;
 
-create table airline (
-	airlineID varchar(50),
-	revenue decimal(50, 2) default 0,
-	primary key (airlineID)
-);
+    select count(*) into route_count
+    from route
+    where routeID = ip_routeID;
 
-create table location (
-	locID varchar(50),
-	primary key (locID)
-);
+    if route_count = 0 then
+        leave sp_main;
+    end if;
+    
+    if in_support_airline is null and ip_support_tail is not null then
+		leave sp_main;
+	end if;
+     if in_support_airline is not null and ip_support_tail is null then
+		leave sp_main;
+	end if;
+     if in_support_airline is not null and ip_support_tail is not null then
+		select count(*) into airplane_count
+		from flight
+		where support_airline = ip_support_airline and support_tail = ip_support_tail;
+		if airplane_count > 0 then
+			leave sp_main;
+		end if;
+	end if;
+    
+    select count(*) 
+    
 
-create table airplane (
-	airlineID varchar(50),
-	tail_num varchar(50),
-	seat_cap int,
-	speed int, -- mph
-	locID varchar(50), -- null indicates it is in flight
-	plane_type varchar(100) not null default 'other', -- jet, propeller, other
-	skids boolean default false, -- should only be true if propeller type
-	props int default 0, -- number of propellers for propeller type -- 0 if not propeller type
-	engines int default 0, -- number of engines for jet type -- 0 if not jet type
-	primary key (airlineID, tail_num),
-	constraint fk_airplane_airlineID foreign key (airlineID) references airline(airlineID) on delete cascade on update cascade, 
-	constraint fk_airplane_locID foreign key (locID) references location(locID) on delete cascade on update cascade
-);
+    if airplane_count > 0 then
+        leave sp_main;
+    end if;
 
-create table airport (
-	airportID varchar(50),
-	name varchar (200) not null,
-	city varchar(100),
-	state varchar(100),
-	country varchar(100),
-	locID varchar(50) not null,
-	primary key (airportID),
-	constraint fk_airport_locID foreign key (locID) references location(locID) on delete cascade on update cascade
-);
+    insert into flight (flightID, routeID, support_airline, support_tail, progress, status, next_time, cost)
+    values (ip_flightID, ip_routeID, ip_support_airline, ip_support_tail, ip_progress, 'on_ground', ip_next_time, ip_cost);
 
-create table leg (
-	legID int,
-	distance int default 0,
-	departure varchar(50) not null,
-	arrival varchar(50) not null,
-	primary key (legID),
-	constraint fk_leg_departure foreign key (departure) references airport(airportID) on delete cascade on update cascade,
-	constraint fk_leg_arrival foreign key (arrival) references airport(airportID) on delete cascade on update cascade
-);
+end //
+delimiter ;
 
-create table route (
-	routeID varchar(50),
-	primary key(routeID)
-);
+-- [4] flight_landing()
+-- -----------------------------------------------------------------------------
+/* This stored procedure updates the state for a flight landing at the next airport
+along it's route.  The time for the flight should be moved one hour into the future
+to allow for the flight to be checked, refueled, restocked, etc. for the next leg
+of travel. */
+-- -----------------------------------------------------------------------------
+drop procedure if exists flight_landing;
+delimiter //
+create procedure flight_landing (in ip_flightID varchar(50))
+sp_main: begin
+    declare _routeID int;
+    declare _progress int;
+    declare _leg_count int;
+    declare _current_time time;
+    declare _new_time time;
 
-create table route_path (
-	routeID varchar(50),
-	legID int,
-	sequence int, 
-	primary key (routeID, legID, sequence),  -- Not sure what modifying the primary key to prioritize the sequence/ordering attribute
-	constraint fk_route_path_routeID foreign key (routeID) references route(routeID) on delete cascade on update cascade,
-	constraint fk_route_path_legID foreign key (legID) references leg(legID) on delete cascade on update cascade
-);
--- add constraints to make sequence number is correct (likely based on progress number / # of legs)
+    select routeID, progress, next_time into _routeID, _progress, _current_time
+    from flight
+    where flightID = ip_flightID;
 
-create table flight (
-	flightID varchar(50),
-	routeID varchar(50) not null,
-	support_airline varchar(50),
-	support_tail varchar(50),
-	progress int default 0,
-	status enum('on_ground', 'in_flight') default 'on_ground',
-	next_time time,
-	cost decimal (50, 2) default 0,
-	primary key (flightID),
-	constraint fk_flight_routeID foreign key (routeID) references route(routeID) on delete cascade on update cascade,
-	constraint fk_flight_support foreign key (support_airline, support_tail) references airplane(airlineID, tail_num) on delete cascade on update cascade
-);
+    select count(*) into _leg_count
+    from route_path
+    where routeID = _routeID;
 
--- delimiter //
--- create trigger check_progress_before_insert
--- before insert on flight
--- for each row
--- begin
--- 	declare leg_count int;
--- 	select count(*) into leg_count from route_path where routeID = route.routeID; 
--- 	if progress > leg_count then
--- 		signal sqlstate '69420'
---         set message_text = 'progress number is greater than the number of legs';
--- 	end if;
--- end //
--- delimiter ;
+    if progress >= _leg_count then
+        signal sqlstate '45000'
+        set message_text = 'Flight has already completed its route';
+        leave sp_main;
+    end if;
+
+    update flight
+    set progress = _progress + 1,
+        status = 'on_ground',
+        next_time = addtime(_current_time, '01:00:00')
+    where flightID = ip_flightID;
+
+end //
+delimiter ;
+
+
+-- [5] retire_flight()
+-- -----------------------------------------------------------------------------
+/* This stored procedure removes a flight that has ended from the system.  The
+flight must be on the ground, and either be at the start its route, or at the
+end of its route. */
+-- -----------------------------------------------------------------------------
+drop procedure if exists retire_flight;
+delimiter //
+create procedure retire_flight (in ip_flightID varchar(50))
+sp_main: begin
+    declare _status enum('on_ground', 'in_flight');
+    declare _progress int;
+    declare _routeID int;
+    declare _leg_count int;
+
+    select status, progress, routeID into _status, _progress, _routeID
+    from flight
+    where flightID = ip_flightID;
+
+    if _status not like 'on_ground' then
+        leave sp_main;
+    end if;
+
+    select count(*) into _leg_count
+    from route_path
+    where routeID = _routeID;
+
+    if _progress != 0 and _progress != _leg_count then
+        leave sp_main;
+    end if;
+
+    delete from flight
+    where flightID = ip_flightID;
+end //
+delimiter ;
