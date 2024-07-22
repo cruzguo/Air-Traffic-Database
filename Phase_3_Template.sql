@@ -163,6 +163,7 @@ sp_main: begin
     declare route_count int;
     declare airplane_count int;
     declare progress int;
+    declare leg_count int;
 
     select count(*) into route_count
     from route
@@ -171,6 +172,14 @@ sp_main: begin
     if route_count = 0 then
         leave sp_main;
     end if;
+    
+    select count(*) into leg_count
+    from route_path
+    where routeID = ip_routeID;
+    
+    if ip_progress >= leg_count then
+		leave sp_main;
+	end if;
     
     if in_support_airline is null and ip_support_tail is not null then
 		leave sp_main;
@@ -186,13 +195,6 @@ sp_main: begin
 			leave sp_main;
 		end if;
 	end if;
-    
-    select count(*) 
-    
-
-    if airplane_count > 0 then
-        leave sp_main;
-    end if;
 
     insert into flight (flightID, routeID, support_airline, support_tail, progress, status, next_time, cost)
     values (ip_flightID, ip_routeID, ip_support_airline, ip_support_tail, ip_progress, 'on_ground', ip_next_time, ip_cost);
