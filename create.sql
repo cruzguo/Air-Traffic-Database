@@ -37,8 +37,8 @@ create table airplane (
 	locID varchar(50), -- null indicates it is in flight
 	plane_type varchar(100) not null default 'other', -- jet, propeller, other
 	skids boolean default false, -- should only be true if propeller type
-	props int default 0, -- number of propellers for propeller type -- null if not propeller type
-	engines int default 0, -- number of engines for jet type -- null if not jet type
+	props int default 0, -- number of propellers for propeller type -- 0 if not propeller type
+	engines int default 0, -- number of engines for jet type -- 0 if not jet type
 	primary key (airlineID, tail_num),
 	constraint fk_airplane_airlineID foreign key (airlineID) references airline(airlineID) on delete cascade on update cascade, 
 	constraint fk_airplane_locID foreign key (locID) references location(locID) on delete cascade on update cascade
