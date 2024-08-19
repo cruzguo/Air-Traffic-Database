@@ -1,1 +1,1 @@
-# CS4400-Phase-3
+Hello. This is a database project I created with three other classmates in CS 4400 over the summer. With the use of table creation, error and constraint checking, stored procedures, following industry standard normalization rules, and more, we were able to create a database that mirrors realisitc air flight traffic data. However, the data inserted is not real time at the moment, but that adjustment can be added quite easily. 
